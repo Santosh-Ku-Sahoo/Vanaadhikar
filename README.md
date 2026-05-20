@@ -37,17 +37,18 @@ Vanaadhikar is a centralized WebGIS portal and Decision Support System (DSS) des
 ```text
 fra_web/
 ├── backend/
-│   ├── app.py             # Flask Web API & DSS Rule Engine
-│   └── test_api.py        # Synchronous API Endpoint Unit Tests
+│   ├── app.py                      # Flask Web API & DSS Rule Engine
+│   ├── test_api.py                 # Synchronous API Endpoint Unit Tests
+│   └── test_problem_statement.py   # Problem Statement Alignment Integration Tests
 ├── database/
-│   ├── schema.sql         # SQLite Database Schema Definitions
-│   ├── seed.py            # Spatial and Tabular Database Seeder
-│   └── fra_dss.db         # Generated SQLite Database
+│   ├── schema.sql                  # SQLite Database Schema Definitions
+│   ├── seed.py                     # Spatial and Tabular Database Seeder
+│   └── fra_dss.db                  # Generated SQLite Database
 ├── frontend/
-│   ├── index.html         # Rich WebGIS Dashboard structure
-│   ├── style.css          # Premium Dark Mode stylesheet
-│   └── script.js          # Leaflet, Chart.js, and client-side logic
-└── README.md              # Documentation
+│   ├── index.html                  # Rich WebGIS Dashboard structure
+│   ├── style.css                   # Premium Dark Mode stylesheet
+│   └── script.js                   # Leaflet, Chart.js, and client-side logic
+└── README.md                       # Documentation
 ```
 
 ---
@@ -87,19 +88,28 @@ python backend/app.py
 The server will boot and display `* Running on http://127.0.0.1:5000`.
 
 ### Step 5: Open the WebGIS Dashboard
-Simply double-click or open the frontend file in any modern web browser:
-- [frontend/index.html](file:///c:/Users/asus/OneDrive/Documents/fra_web/frontend/index.html)
+You can access the frontend in one of two ways:
+1. **Via the Flask Web Server (Recommended)**: Open [http://127.0.0.1:5000/](http://127.0.0.1:5000/) in your web browser. The Flask backend automatically serves the frontend static files.
+2. **Via Local File System**: Double-click or open [frontend/index.html](file:///C:/Users/asus/OneDrive/Documents/fra_nexus/fra_web/frontend/index.html) in your browser. The frontend dynamically resolves the backend URL to communicate with port 5000.
 
 ---
 
 ## 🧪 Verification & Testing
 
-Verify that all backend API routes and database models are functioning correctly by executing the test script:
+### 1. API Unit Tests
+Verify that all backend API routes and database models are functioning correctly:
 ```bash
 python backend/test_api.py
 ```
 **Expected Output:**
 ```text
-Ran 6 tests in 0.138s
+Ran 6 tests in 0.122s
 OK
 ```
+
+### 2. Problem Statement Alignment Tests
+Verify the complete implementation of the 4 core properties (WebGIS Atlas, Document Digitization, Satellite Asset Mapping, and multi-ministry DSS integration):
+```bash
+python backend/test_problem_statement.py
+```
+This runs the full integration testing suite and prints a detailed verification report for each of the properties.
