@@ -1,5 +1,12 @@
 // API Configuration
-const API_BASE = 'http://127.0.0.1:5000/api';
+const getApiBase = () => {
+  const { protocol, hostname, port } = window.location;
+  if (protocol === 'file:') {
+    return 'http://127.0.0.1:5000/api';
+  }
+  return `${protocol}//${hostname}${port ? ':' + port : ''}/api`;
+};
+const API_BASE = getApiBase();
 
 // Global Application State
 let state = {
@@ -7,6 +14,7 @@ let state = {
   stats: {},
   activeVillage: null,
   activeTab: 'webgis-tab',
+  backendOffline: false,
   dssThresholds: {
     water_threshold: 0.40,
     infra_threshold: 0.50,
@@ -218,6 +226,13 @@ function initMap() {
 // 4. API Data Loading
 async function loadData() {
   try {
+    state.backendOffline = false;
+    // Reset connection status UI to online
+    document.querySelector('.connection-status').innerHTML = `
+      <span class="status-dot online"></span>
+      <span class="status-text">Active</span>
+    `;
+    
     // Fetch statistics
     const statsRes = await fetch(`${API_BASE}/stats`);
     state.stats = await statsRes.json();
@@ -233,13 +248,19 @@ async function loadData() {
     // Populate Sat Village Select
     populateVillageSelectors();
     
+    // Run DSS engine calculations once data is ready
+    runDSSEngine();
+    
   } catch (error) {
     console.error("Error loading data from backend:", error);
+    state.backendOffline = true;
     // Display offline/error notification
     document.querySelector('.connection-status').innerHTML = `
       <span class="status-dot online" style="background-color: var(--danger); box-shadow: 0 0 8px var(--danger);"></span>
       <span class="status-text">Backend Offline</span>
     `;
+    // Run DSS engine to show the offline message in the table
+    runDSSEngine();
   }
 }
 
@@ -734,6 +755,26 @@ function initDigitizer() {
 // 8. Remote Sensing Satellite CV Console
 let landUseChartInstance = null;
 
+function updateSatelliteLayers() {
+  const showFarms = document.getElementById('chk-toggle-farms').checked;
+  const showPonds = document.getElementById('chk-toggle-ponds').checked;
+  const showForests = document.getElementById('chk-toggle-forests').checked;
+  const showHomes = document.getElementById('chk-toggle-homes').checked;
+
+  document.querySelectorAll('.sat-asset-marker.agricultural').forEach(el => {
+    el.style.display = showFarms ? 'block' : 'none';
+  });
+  document.querySelectorAll('.sat-asset-marker.pond').forEach(el => {
+    el.style.display = showPonds ? 'block' : 'none';
+  });
+  document.querySelectorAll('.sat-asset-marker.forest').forEach(el => {
+    el.style.display = showForests ? 'block' : 'none';
+  });
+  document.querySelectorAll('.sat-asset-marker.homestead').forEach(el => {
+    el.style.display = showHomes ? 'block' : 'none';
+  });
+}
+
 function initSatelliteCV() {
   const select = document.getElementById('sat-village-select');
   const runCvBtn = document.getElementById('btn-trigger-cv');
@@ -743,6 +784,12 @@ function initSatelliteCV() {
   select.addEventListener('change', () => {
     loadSatelliteVillage(select.value);
   });
+  
+  // Set up layer toggles
+  document.getElementById('chk-toggle-farms').addEventListener('change', updateSatelliteLayers);
+  document.getElementById('chk-toggle-ponds').addEventListener('change', updateSatelliteLayers);
+  document.getElementById('chk-toggle-forests').addEventListener('change', updateSatelliteLayers);
+  document.getElementById('chk-toggle-homes').addEventListener('change', updateSatelliteLayers);
   
   runCvBtn.addEventListener('click', async () => {
     const vId = select.value;
@@ -781,14 +828,24 @@ function initSatelliteCV() {
         loadSatelliteVillage(vId);
         
       } else {
-        alert("Satellite CV mapping failed: " + data.error);
+        throw new Error(data.error || "CV detection failed");
       }
     } catch (e) {
       console.error(e);
-      alert("Error contacting CV backend.");
+      scanner.remove();
+      runCvBtn.classList.remove('btn-primary');
+      runCvBtn.classList.add('btn-danger');
+      runCvBtn.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Error scanning imagery`;
+      setTimeout(() => {
+        runCvBtn.classList.remove('btn-danger');
+        runCvBtn.classList.add('btn-primary');
+        runCvBtn.innerHTML = `<i class="fa-solid fa-radar"></i> Run Satellite CV Asset Mapping`;
+      }, 4000);
     } finally {
       runCvBtn.disabled = false;
-      runCvBtn.innerHTML = `<i class="fa-solid fa-radar"></i> Run Satellite CV Asset Mapping`;
+      if (!runCvBtn.classList.contains('btn-danger')) {
+        runCvBtn.innerHTML = `<i class="fa-solid fa-radar"></i> Run Satellite CV Asset Mapping`;
+      }
     }
   });
 }
@@ -852,6 +909,9 @@ function loadSatelliteVillage(vId) {
   
   // Update land use chart
   renderLandUseChart(vil);
+  
+  // Apply current active layer toggles to markers
+  updateSatelliteLayers();
 }
 
 function renderLandUseChart(vil) {
@@ -917,9 +977,6 @@ function initDSS() {
   });
   
   runDssBtn.addEventListener('click', runDSSEngine);
-  
-  // Initial run once page loaded
-  setTimeout(runDSSEngine, 1000);
 }
 
 async function runDSSEngine() {
@@ -930,6 +987,18 @@ async function runDSSEngine() {
   const runDssBtn = document.getElementById('btn-recalculate-dss');
   runDssBtn.disabled = true;
   runDssBtn.innerHTML = `<i class="fa-solid fa-arrows-spin fa-spin"></i> Running Engine Rules...`;
+  
+  const tbody = document.querySelector('#dss-results-table tbody');
+  
+  if (state.backendOffline) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); font-weight: 500; padding: 25px;">
+      <i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px; font-size: 16px; color: var(--danger);"></i>
+      Error: The backend server is currently offline. Please run <code>python backend/app.py</code> and refresh the page.
+    </td></tr>`;
+    runDssBtn.disabled = false;
+    runDssBtn.innerHTML = `<i class="fa-solid fa-arrows-spin"></i> Recalculate DSS Priorities`;
+    return;
+  }
   
   try {
     const response = await fetch(`${API_BASE}/dss/evaluate`, {
@@ -942,15 +1011,25 @@ async function runDSSEngine() {
       })
     });
     
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const data = await response.json();
     if (data.success) {
       renderDSSResults(data);
     } else {
-      alert("DSS evaluation failed: " + data.error);
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); font-weight: 500; padding: 25px;">
+        <i class="fa-solid fa-circle-exclamation" style="margin-right: 8px; font-size: 16px;"></i>
+        DSS evaluation failed: ${data.error}
+      </td></tr>`;
     }
   } catch(e) {
     console.error(e);
-    alert("Error communicating with DSS engine backend.");
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); font-weight: 500; padding: 25px;">
+      <i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px; font-size: 16px; color: var(--danger);"></i>
+      Error communicating with DSS engine backend. Ensure Flask is running.
+    </td></tr>`;
   } finally {
     runDssBtn.disabled = false;
     runDssBtn.innerHTML = `<i class="fa-solid fa-arrows-spin"></i> Recalculate DSS Priorities`;
