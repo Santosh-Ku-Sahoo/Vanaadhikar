@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vanaadhikar: AI-Powered FRA Atlas & WebGIS DSS</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-tree"></i>
+        </div>
+        <div class="brand-text">
+          <h2>Vanaadhikar</h2>
+          <span>FRA Atlas & DSS</span>
+        </div>
+      </div>
+      
+      <nav class="sidebar-menu">
+        <a href="#" class="menu-item active" data-tab="webgis-tab">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>WebGIS Portal</span>
+        </a>
+        <a href="#" class="menu-item" data-tab="analytics-tab">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Analytics & Progress</span>
+        </a>
+        <a href="#" class="menu-item" data-tab="digitizer-tab">
+          <i class="fa-solid fa-file-shield"></i>
+          <span>AI Claim Digitizer</span>
+        </a>
+        <a href="#" class="menu-item" data-tab="satellite-tab">
+          <i class="fa-solid fa-satellite"></i>
+          <span>Satellite Asset Map</span>
+        </a>
+        <a href="#" class="menu-item" data-tab="dss-tab">
+          <i class="fa-solid fa-square-poll-horizontal"></i>
+          <span>DSS Scheme Layering</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="connection-status">
+          <span class="status-dot online"></span>
+          <span class="status-text">Backend Connected</span>
+        </div>
+        <button id="theme-toggle" class="btn-theme-toggle">
+          <i class="fa-solid fa-sun"></i>
+          <span>Light Mode</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Top Header -->
+      <header class="main-header">
+        <div class="header-title">
+          <h1 id="page-title">WebGIS Portal</h1>
+          <p id="page-subtitle">Interactive monitoring of Forest Rights Act (FRA) implementation</p>
+        </div>
+        <div class="header-stats">
+          <div class="mini-stat">
+            <span class="label">Total Claims</span>
+            <span class="value" id="header-total-claims">-</span>
+          </div>
+          <div class="mini-stat">
+            <span class="label">Total Area</span>
+            <span class="value" id="header-total-area">- ac</span>
+          </div>
+          <div class="mini-stat">
+            <span class="label">States Covered</span>
+            <span class="value">4</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Container -->
+      <div class="content-body">
+        
+        <!-- TAB 1: WEBGIS PORTAL -->
+        <section id="webgis-tab" class="tab-pane active">
+          <div class="map-layout">
+            <!-- Left panel: Filters & Map -->
+            <div class="map-container-wrapper">
+              <div class="filter-bar">
+                <div class="filter-group">
+                  <label for="map-state-filter"><i class="fa-solid fa-landmark"></i> State</label>
+                  <select id="map-state-filter" class="form-control">
+                    <option value="all">All States</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Tripura">Tripura</option>
+                    <option value="Odisha">Odisha</option>
+                    <option value="Telangana">Telangana</option>
+                  </select>
+                </div>
+
+                <div class="filter-group">
+                  <label for="map-district-filter"><i class="fa-solid fa-map"></i> District</label>
+                  <input type="text" id="map-district-filter" class="form-control" placeholder="Search district..." style="background: var(--bg-control); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); padding: 6px 12px; font-size: 13px; outline: none; width: 130px; height: 35px;" />
+                </div>
+
+                <div class="filter-group">
+                  <label for="map-tribal-filter"><i class="fa-solid fa-users"></i> Tribe</label>
+                  <select id="map-tribal-filter" class="form-control">
+                    <option value="all">All Tribes</option>
+                    <option value="Baiga">Baiga</option>
+                    <option value="Gond">Gond</option>
+                    <option value="Bhil">Bhil</option>
+                    <option value="Tripuri">Tripuri</option>
+                    <option value="Reang">Reang</option>
+                    <option value="Santhal">Santhal</option>
+                    <option value="Kolha">Kolha</option>
+                    <option value="Kondh">Kondh</option>
+                    <option value="Koya">Koya</option>
+                  </select>
+                </div>
+                
+                <div class="filter-group">
+                  <label for="map-type-filter"><i class="fa-solid fa-folder-open"></i> Type</label>
+                  <select id="map-type-filter" class="form-control">
+                    <option value="all">All Rights</option>
+                    <option value="IFR">Individual (IFR)</option>
+                    <option value="CR">Community (CR)</option>
+                    <option value="CFR">Resource (CFR)</option>
+                  </select>
+                </div>
+
+                <div class="filter-group">
+                  <label for="map-status-filter"><i class="fa-solid fa-circle-check"></i> Status</label>
+                  <select id="map-status-filter" class="form-control">
+                    <option value="all">All Status</option>
+                    <option value="Verified">Verified</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                </div>
+                
+                <button id="btn-reset-filters" class="btn-secondary">
+                  <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                </button>
+              </div>
+              
+              <!-- Map element -->
+              <div id="map"></div>
+              
+              <div class="map-legend">
+                <div class="legend-item"><span class="legend-color verified"></span> Verified Patta</div>
+                <div class="legend-item"><span class="legend-color pending"></span> Pending Review</div>
+                <div class="legend-item"><span class="legend-color rejected"></span> Rejected Claim</div>
+                <div class="legend-item"><span class="legend-color asset-pond"></span> Pond</div>
+                <div class="legend-item"><span class="legend-color asset-farm"></span> Farm Land</div>
+                <div class="legend-item"><span class="legend-color asset-forest"></span> Forest Res</div>
+              </div>
+            </div>
+            
+            <!-- Right panel: Selected Village Details -->
+            <div class="village-details-panel" id="village-details-card">
+              <div class="empty-selection-state">
+                <i class="fa-solid fa-map-pin animate-bounce"></i>
+                <h3>Select a Village on Map</h3>
+                <p>Click on any village boundary or marker to view its detailed socio-economic, spatial, assets and claims data.</p>
+              </div>
+              <div class="village-details-content d-none" id="village-details-content">
+                <div class="detail-header">
+                  <span class="state-badge" id="v-detail-state">-</span>
+                  <h3 id="v-detail-name">Village Name</h3>
+                  <p><i class="fa-solid fa-location-crosshairs"></i> District: <span id="v-detail-district">-</span></p>
+                </div>
+                
+                <div class="grid-2-cols" style="grid-template-columns: repeat(3, 1fr) !important;">
+                  <div class="info-metric-card">
+                    <span class="label">Water Index</span>
+                    <div class="progress-bar-wrapper">
+                      <div class="progress-bar" id="v-detail-water-bar" style="width: 0%"></div>
+                    </div>
+                    <span class="value" id="v-detail-water-val">0.00</span>
+                  </div>
+                  <div class="info-metric-card">
+                    <span class="label">Forest Cover</span>
+                    <div class="progress-bar-wrapper">
+                      <div class="progress-bar green-bar" id="v-detail-forest-bar" style="width: 0%"></div>
+                    </div>
+                    <span class="value" id="v-detail-forest-val">0.0%</span>
+                  </div>
+                  <div class="info-metric-card">
+                    <span class="label">Infra Index</span>
+                    <div class="progress-bar-wrapper">
+                      <div class="progress-bar purple-bar" id="v-detail-infra-bar" style="width: 0%"></div>
+                    </div>
+                    <span class="value" id="v-detail-infra-val">0.00</span>
+                  </div>
+                </div>
+
+                <div class="detail-divider"></div>
+                
+                <div class="section-title-with-count">
+                  <h4><i class="fa-solid fa-file-lines"></i> FRA Claims</h4>
+                  <span class="badge" id="v-detail-claims-count">0</span>
+                </div>
+                <div class="claims-list-wrapper" id="v-detail-claims-list">
+                  <!-- Dynamic claims -->
+                </div>
+
+                <div class="detail-divider"></div>
+                
+                <div class="section-title-with-count">
+                  <h4><i class="fa-solid fa-satellite-dish"></i> AI-Mapped Assets</h4>
+                  <span class="badge" id="v-detail-assets-count">0</span>
+                </div>
+                <div class="assets-list-wrapper" id="v-detail-assets-list">
+                  <!-- Dynamic assets -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: PROGRESS & ANALYTICS -->
+        <section id="analytics-tab" class="tab-pane">
+          <div class="analytics-grid">
+            
+            <div class="analytics-card main-stats-chart">
+              <h3><i class="fa-solid fa-chart-simple"></i> State-wise FRA Implementation Status</h3>
+              <div class="chart-container">
+                <canvas id="stateClaimsChart"></canvas>
+              </div>
+            </div>
+            
+            <div class="analytics-card">
+              <h3><i class="fa-solid fa-chart-pie"></i> Claims Type Distribution</h3>
+              <div class="chart-container-donut">
+                <canvas id="claimsTypeChart"></canvas>
+              </div>
+            </div>
+
+            <div class="analytics-card">
+              <h3><i class="fa-solid fa-chart-bar"></i> Satellite Mapped Assets Density</h3>
+              <div class="chart-container-donut">
+                <canvas id="assetsDensityChart"></canvas>
+              </div>
+            </div>
+
+            <div class="analytics-card table-card full-width">
+              <h3><i class="fa-solid fa-list-check"></i> State-level Metric Comparison</h3>
+              <div class="table-responsive">
+                <table class="data-table" id="state-metrics-table">
+                  <thead>
+                    <tr>
+                      <th>State</th>
+                      <th>Total Claims</th>
+                      <th>Verified Claims</th>
+                      <th>Pending Review</th>
+                      <th>Rejected Claims</th>
+                      <th>Total Area Approved (Acres)</th>
+                      <th>Avg Water Index</th>
+                      <th>Avg Forest Cover %</th>
+                      <th>Verification Progress</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: AI CLAIM DIGITIZER -->
+        <section id="digitizer-tab" class="tab-pane">
+          <div class="digitizer-layout">
+            <div class="digitizer-left">
+              <div class="panel-card">
+                <h3><i class="fa-solid fa-file-import"></i> Scanned Document Input</h3>
+                <p class="description">Select a scanned legacy forest right patta document to run OCR and extract key Named Entities (NER) using the NLP model pipeline.</p>
+                
+                <div class="form-group select-doc-group">
+                  <label for="mock-doc-select">Select Scanned Sample Patta:</label>
+                  <select id="mock-doc-select" class="form-control">
+                    <option value="doc1">Document 1: Ramesh Baiga IFR (Mandla, MP)</option>
+                    <option value="doc2">Document 2: Savitri Baiga IFR (Mandla, MP)</option>
+                    <option value="doc3">Document 3: Ganda Chara Joint CFR (Dhalai, Tripura)</option>
+                    <option value="doc4">Document 4: Suresh Santhal IFR (Mayurbhanj, Odisha)</option>
+                    <option value="doc5">Document 5: Ram Gond IFR (Adilabad, Telangana)</option>
+                  </select>
+                </div>
+                
+                <div class="doc-viewer-card">
+                  <div class="doc-header">
+                    <span class="file-name" id="selected-doc-name">ramesh_baiga_ifr.txt</span>
+                    <span class="file-size">420 bytes</span>
+                  </div>
+                  <div class="doc-body">
+                    <pre id="selected-doc-content">Loading document content...</pre>
+                  </div>
+                </div>
+                
+                <button id="btn-run-digitize" class="btn-primary btn-block">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Run AI OCR & Entity Extraction
+                </button>
+              </div>
+            </div>
+            
+            <div class="digitizer-right">
+              <div class="panel-card terminal-card">
+                <div class="terminal-header">
+                  <span class="dot red"></span>
+                  <span class="dot yellow"></span>
+                  <span class="dot green"></span>
+                  <span class="terminal-title">AI Processing Pipeline Log</span>
+                </div>
+                <div class="terminal-body" id="ocr-terminal">
+                  <div class="log-line text-muted">Ready to receive execution trigger...</div>
+                </div>
+              </div>
+              
+              <div class="panel-card d-none" id="ner-results-card">
+                <h3><i class="fa-solid fa-circle-nodes text-accent"></i> Standardized Extracted Entities</h3>
+                <div class="ner-tags-grid">
+                  <div class="ner-item">
+                    <span class="label">Claimant Name</span>
+                    <span class="value val-highlight" id="ner-claimant">-</span>
+                  </div>
+                  <div class="ner-item">
+                    <span class="label">Right Type</span>
+                    <span class="value val-highlight" id="ner-type">-</span>
+                  </div>
+                  <div class="ner-item">
+                    <span class="label">Village</span>
+                    <span class="value val-highlight" id="ner-village">-</span>
+                  </div>
+                  <div class="ner-item">
+                    <span class="label">Area (Acres)</span>
+                    <span class="value val-highlight" id="ner-area">-</span>
+                  </div>
+                  <div class="ner-item">
+                    <span class="label">Tribal Group</span>
+                    <span class="value val-highlight" id="ner-tribal">-</span>
+                  </div>
+                  <div class="ner-item">
+                    <span class="label">Extracted Status</span>
+                    <span class="value val-highlight text-warning" id="ner-status">-</span>
+                  </div>
+                </div>
+                <div class="alert-box success-alert mt-15">
+                  <i class="fa-solid fa-database"></i> Database successfully updated with extracted records.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: SATELLITE ASSET MAP -->
+        <section id="satellite-tab" class="tab-pane">
+          <div class="satellite-layout">
+            <div class="sat-control-panel">
+              <div class="panel-card">
+                <h3><i class="fa-solid fa-satellite-dish"></i> Remote Sensing Analysis Console</h3>
+                <p class="description">Select an FRA village to overlay satellite classifications (Computer Vision ML layers) and trigger asset auto-detection.</p>
+                
+                <div class="form-group">
+                  <label for="sat-village-select">Select Target Village:</label>
+                  <select id="sat-village-select" class="form-control">
+                    <!-- Loaded dynamically -->
+                  </select>
+                </div>
+                
+                <div class="micro-stats-grid mt-15">
+                  <div class="stat-box">
+                    <span class="num" id="sat-stat-water">0.0</span>
+                    <span class="lbl">Water Index</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="num" id="sat-stat-forest">0%</span>
+                    <span class="lbl">Forest Cover</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="num" id="sat-stat-infra">0.0</span>
+                    <span class="lbl">Infra Index</span>
+                  </div>
+                </div>
+                
+                <button id="btn-trigger-cv" class="btn-primary btn-block mt-20">
+                  <i class="fa-solid fa-radar"></i> Run Satellite CV Asset Mapping
+                </button>
+              </div>
+              
+              <div class="panel-card mt-20">
+                <h3><i class="fa-solid fa-chart-column"></i> Land Use Statistics</h3>
+                <div class="chart-container-small">
+                  <canvas id="landUseChart"></canvas>
+                </div>
+              </div>
+            </div>
+            
+            <div class="sat-visual-panel">
+              <div class="panel-card sat-map-card">
+                <div class="sat-map-header">
+                  <span class="tag"><i class="fa-solid fa-circle-dot text-danger"></i> Live Satellite Feed (Simulated)</span>
+                  <h4 id="sat-map-title">Village Area View</h4>
+                </div>
+                <!-- Simulated Satellite Image Box with overlays -->
+                <div class="satellite-viewer-box">
+                  <!-- We can use a generated background and show CSS overlays of detected polygons -->
+                  <div class="sat-base-image" id="sat-viewer-bg">
+                    <!-- Dynamic absolute positioned items representing detected farms and ponds -->
+                  </div>
+                  <div class="sat-hud-elements">
+                    <div class="hud-box top-left">Resolution: 0.5m PAN</div>
+                    <div class="hud-box top-right">Sensor: Sentinel-2A</div>
+                    <div class="hud-box bottom-left" id="sat-hud-coords">Coords: -</div>
+                    <div class="hud-box bottom-right">Overlay: Classification Mask</div>
+                  </div>
+                </div>
+                <div class="cv-layer-toggles">
+                  <span class="lbl">Toggle Classification Layers:</span>
+                  <label class="toggle-btn"><input type="checkbox" id="chk-toggle-farms" checked> <span class="chk-label">Farms</span></label>
+                  <label class="toggle-btn"><input type="checkbox" id="chk-toggle-ponds" checked> <span class="chk-label">Ponds</span></label>
+                  <label class="toggle-btn"><input type="checkbox" id="chk-toggle-forests" checked> <span class="chk-label">Forest</span></label>
+                  <label class="toggle-btn"><input type="checkbox" id="chk-toggle-homes" checked> <span class="chk-label">Homesteads</span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: DECISION SUPPORT SYSTEM (DSS) -->
+        <section id="dss-tab" class="tab-pane">
+          <div class="dss-layout">
+            <div class="dss-controls-card">
+              <div class="panel-card">
+                <h3><i class="fa-solid fa-sliders"></i> Scheme Eligibility Criteria Rules</h3>
+                <p class="description">Adjust index thresholds dynamically to simulate eligibility layering for Central Sector Schemes (CSS).</p>
+                
+                <div class="form-group slider-group">
+                  <div class="slider-header">
+                    <label for="slider-water">Jal Jeevan Mission (Water Scarcity)</label>
+                    <span class="slider-val" id="val-water">0.40</span>
+                  </div>
+                  <input type="range" id="slider-water" min="0.1" max="0.9" step="0.05" value="0.40" class="slider">
+                  <span class="slider-description">Trigger water schemes if village Water Index is less than this.</span>
+                </div>
+
+                <div class="form-group slider-group">
+                  <div class="slider-header">
+                    <label for="slider-infra">DAJGUA (PVTG Infrastructure)</label>
+                    <span class="slider-val" id="val-infra">0.50</span>
+                  </div>
+                  <input type="range" id="slider-infra" min="0.1" max="0.9" step="0.05" value="0.50" class="slider">
+                  <span class="slider-description">Trigger DAJGUA integrated aid if Infrastructure Index is less than this.</span>
+                </div>
+
+                <div class="form-group slider-group">
+                  <div class="slider-header">
+                    <label for="slider-land">PM-KISAN (Land Holding)</label>
+                    <span class="slider-val" id="val-land">2.0 ac</span>
+                  </div>
+                  <input type="range" id="slider-land" min="1.0" max="5.0" step="0.5" value="2.0" class="slider">
+                  <span class="slider-description">Grant agricultural cash layering if verified IFR patta exceeds this acreage.</span>
+                </div>
+
+                <button id="btn-recalculate-dss" class="btn-primary btn-block">
+                  <i class="fa-solid fa-arrows-spin"></i> Recalculate DSS Priorities
+                </button>
+              </div>
+              
+              <div class="panel-card mt-20 scheme-legend-card">
+                <h3><i class="fa-solid fa-layer-group"></i> Integrated Schemes (CSS)</h3>
+                <div class="css-scheme-info">
+                  <div class="scheme-info-item mota">
+                    <span class="indicator">DAJGUA</span>
+                    <div class="desc">
+                      <strong>DAJGUA Integration (3 Ministries)</strong>
+                      <span>Jointly managed by Ministry of Tribal Affairs (infrastructure, livelihood), Ministry of Rural Development (roads, housing), and Jal Shakti (potable water).</span>
+                    </div>
+                  </div>
+                  <div class="scheme-info-item jjm">
+                    <span class="indicator">JJM</span>
+                    <div class="desc">
+                      <strong>Jal Jeevan Mission</strong>
+                      <span>Priority installation of community piping, water storage tanks, and borehole wells in verified patta holdings.</span>
+                    </div>
+                  </div>
+                  <div class="scheme-info-item mgnrega">
+                    <span class="indicator">MGNREGA</span>
+                    <div class="desc">
+                      <strong>MGNREGA Pond Excavation</strong>
+                      <span>Providing local employment for water asset creation (ponds, check dams) in scarce regions.</span>
+                    </div>
+                  </div>
+                  <div class="scheme-info-item pmkisan">
+                    <span class="indicator">PM-KISAN</span>
+                    <div class="desc">
+                      <strong>PM-KISAN Layering</strong>
+                      <span>Direct income support to eligible forest dwellers holding verified agricultural pattas.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="dss-results-card">
+              <div class="panel-card table-card">
+                <div class="results-header">
+                  <h3><i class="fa-solid fa-list-ol"></i> Layered Scheme Recommendations</h3>
+                  <div class="results-stats">
+                    <span class="badge badge-info" id="dss-count-total">0 Recommendations</span>
+                  </div>
+                </div>
+                
+                <div class="table-responsive dss-table-wrapper">
+                  <table class="data-table" id="dss-results-table">
+                    <thead>
+                      <tr>
+                        <th>Priority</th>
+                        <th>Target Beneficiary / Village</th>
+                        <th>State</th>
+                        <th>Scheme Category</th>
+                        <th>Ministry</th>
+                        <th>Recommendation Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Leaflet & ChartJS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Custom JS -->
+  <script src="script.js"></script>
+</body>
+</html>
